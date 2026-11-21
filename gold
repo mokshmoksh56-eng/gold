@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>كاميرا ليلية لإبراز الذهب</title>
+<style>
+  :root{
+    --gold:#ffd257;
+    --gold2:#f0a500;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; padding:16px;
+    font-family:system-ui,"Segoe UI",Tahoma,sans-serif;
+    background:radial-gradient(circle at 50% 0%, #1a1a22, #07070a 70%);
+    color:#eee; min-height:100vh;
+    display:flex; justify-content:center;
+  }
+  .app{width:100%; max-width:900px}
+  h1{font-size:20px; text-align:center; color:var(--gold); margin:6px 0 4px}
+  .sub{text-align:center; color:#8b8b96; font-size:13px; margin:0 0 16px}
+
+  .stage{
+    position:relative; background:#000; border-radius:16px; overflow:hidden;
+    border:1px solid #2a2a33; box-shadow:0 0 45px rgba(240,165,0,.15);
+    display:flex; justify-content:center; align-items:center;
+    min-height:240px;
+  }
+  canvas{display:block; width:100%; height:auto; max-height:70vh}
+  video{display:none}
+
+  .placeholder{
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:12px;
+    color:#7a7a86; font-size:14px; text-align:center; padding:24px;
+  }
+  .placeholder .icon{font-size:38px; opacity:.6}
+
+  .badge{
+    position:absolute; top:10px; inset-inline-start:10px; display:none;
+    background:rgba(0,0,0,.6); border:1px solid #3a3a45; color:var(--gold);
+    font-size:12px; padding:4px 12px; border-radius:999px; backdrop-filter:blur(6px);
+  }
+
+  .toolbar{display:flex; gap:10px; flex-wrap:wrap; margin:14px 0}
+  button{
+    flex:1 1 140px; padding:12px 14px; border-radius:12px; cursor:pointer;
+    border:1px solid #33333d; background:#17171e; color:#ddd;
+    font-size:14px; font-family:inherit; transition:.15s;
+  }
+  button:hover{background:#20202a; border-color:#4a4a58}
+  button.primary{
+    background:linear-gradient(135deg,var(--gold2),#ffcf4d);
+    color:#1a1200; font-weight:700; border:none;
+  }
+  button.primary:hover{filter:brightness(1.1)}
+  button:disabled{opacity:.45; cursor:not-allowed}
+
+  .controls{
+    background:#101016; border:1px solid #22222b; border-radius:14px;
+    padding:14px 16px; display:grid; gap:14px;
+  }
+  .row{display:grid; grid-template-columns:150px 1fr 58px; align-items:center; gap:12px}
+  .row label{font-size:13px; color:#a9a9b6}
+  .row .val{font-size:12px; color:var(--gold); text-align:center;
+    font-variant-numeric:tabular-nums}
+  input[type=range]{
+    -webkit-appearance:none; appearance:none; height:6px; border-radius:6px;
+    background:#2b2b36; outline:none; width:100%;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:18px; height:18px; border-radius:50%;
+    background:var(--gold); cursor:pointer; border:2px solid #1a1a20;
+    box-shadow:0 0 10px rgba(255,210,87,.6);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:18px; height:18px; border-radius:50%; background:var(--gold);
+    cursor:pointer; border:2px solid #1a1a20;
+  }
+  select{
+    background:#1a1a22; color:#eee; border:1px solid #33333d; border-radius:10px;
+    padding:9px 12px; font-family:inherit; font-size:13px; cursor:pointer;
+  }
+  .hint{font-size:12px; color:#6f6f7c; text-align:center; margin-top:12px; line-height:1.7}
+  @media(max-width:520px){
+    .row{grid-template-columns:1fr 58px; }
+    .row label{grid-column:1 / -1}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <h1>✦ كاميرا ليلية تُظهر الذهب ذهبًا ✦</h1>
+  <p class="sub">تحسين الإضاءة المنخفضة + مضاعفة درجة اللون الذهبي في الوقت الحقيقي</p>
+
+  <div class="stage">
+    <video id="video" playsinline muted autoplay></video>
+    <canvas id="canvas"></canvas>
+    <div class="badge" id="badge">● LIVE</div>
+    <div class="placeholder" id="placeholder">
+      <div class="icon">🌙</div>
+      <div>اضغط «تشغيل الكاميرا» للبدء<br>ثم وجّه الكاميرا نحو الذهب</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="primary" id="btnStart">▶ تشغيل الكاميرا</button>
+    <button id="btnStop" disabled>■ إيقاف</button>
+    <button id="btnSnap" disabled>📷 التقاط صورة</button>
+  </div>
+
+  <div class="controls">
+    <div class="row">
+      <label>الإضاءة الليلية</label>
+      <input type="range" id="gamma" min="0.35" max="1.4" step="0.01" value="0.65">
+      <span class="val" id="gammaVal">0.65</span>
+    </div>
+    <div class="row">
+      <label>قوة إبراز الذهب</label>
+      <input type="range" id="gold" min="0" max="2" step="0.05" value="1">
+      <span class="val" id="goldVal">1.00</span>
+    </div>
+    <div class="row">
+      <label>بداية نطاق الذهب</label>
+      <input type="range" id="hmin" min="0" max="90" step="1" value="28">
+      <span class="val" id="hminVal">28°</span>
+    </div>
+    <div class="row">
+      <label>نهاية نطاق الذهب</label>
+      <input type="range" id="hmax" min="10" max="120" step="1" value="68">
+      <span class="val" id="hmaxVal">68°</span>
+    </div>
+    <div class="row">
+      <label>حساسية اللون</label>
+      <input type="range" id="sens" min="10" max="150" step="1" value="45">
+      <span class="val" id="sensVal">45</span>
+    </div>
+    <div class="row">
+      <label>الوضع</label>
+      <select id="mode">
+        <option value="gold" selected>ذهب فقط (الموصى به)</option>
+        <option value="green">رؤية ليلية خضراء</option>
+        <option value="natural">طبيعي محسّن</option>
+      </select>
+      <span></span>
+    </div>
+  </div>
+
+  <p class="hint">
+    ملاحظة: الكاميرا تحتاج إلى <b>HTTPS</b> أو <b>localhost</b> لتعمل.<br>
+    لو الذهب ما زال باهتًا: ارفع «الإضاءة الليلية» إلى 0.5 و«قوة إبراز الذهب» إلى 1.5.
+  </p>
+</div>
+
+<script>
+(function(){
+  const video      = document.getElementById('video');
+  const canvas     = document.getElementById('canvas');
+  const ctx        = canvas.getContext('2d', { willReadFrequently: true });
+  const placeholder= document.getElementById('placeholder');
+  const badge      = document.getElementById('badge');
+  const btnStart   = document.getElementById('btnStart');
+  const btnStop    = document.getElementById('btnStop');
+  const btnSnap    = document.getElementById('btnSnap');
+
+  let stream  = null;
+  let running = false;
+  let rafId   = null;
+  let lastVW  = 0, lastVH = 0;
+
+  /* ---------- إعدادات المعالجة ---------- */
+  const P = {
+    gamma : 0.65,   // أقل = إضاءة ليلية أقوى
+    gold  : 1.00,   // قوة إبراز الذهب
+    hmin  : 28,     // بداية درجة اللون الذهبي
+    hmax  : 68,     // نهاية درجة اللون الذهبي
+    sens  : 45,     // أقل فرق بين القنوات المطلوب لاعتبار البكسل ملوّنًا
+    mode  : 'gold'
+  };
+
+  /* ---------- جدول تحويل جاما (LUT) لسرعة أعلى ---------- */
+  let lut = new Uint8ClampedArray(256);
+  let lutGamma = -1;
+  function buildLUT(g){
+    if (lutGamma === g) return;
+    lutGamma = g;
+    for (let i = 0; i < 256; i++){
+      lut[i] = Math.max(0, Math.min(255, Math.round(255 * Math.pow(i / 255, g))));
+    }
+  }
+
+  /* ---------- معالجة البكسلات ---------- */
+  function processPixels(d){
+    buildLUT(P.gamma);
+
+    /* وضع الرؤية الليلية الخضراء */
+    if (P.mode === 'green'){
+      for (let i = 0; i < d.length; i += 4){
+        const r = lut[d[i]], g = lut[d[i+1]], b = lut[d[i+2]];
+        let y = 0.299*r + 0.587*g + 0.114*b;
+        y *= 1.2;
+        d[i]   = y * 0.25;
+        d[i+1] = y;
+        d[i+2] = y * 0.38;
+      }
+      return;
+    }
+
+    /* وضع طبيعي محسّن (إضاءة فقط) */
+    if (P.mode === 'natural'){
+      for (let i = 0; i < d.length; i += 4){
+        d[i]   = lut[d[i]];
+        d[i+1] = lut[d[i+1]];
+        d[i+2] = lut[d[i+2]];
+      }
+      return;
+    }
+
+    /* ==== وضع الذهب ==== */
+    const kGold = P.gold, hMin = P.hmin, hMax = P.hmax, sens = P.sens;
+
+    for (let i = 0; i < d.length; i += 4){
+      let r = lut[d[i]];
+      let g = lut[d[i+1]];
+      let b = lut[d[i+2]];
+
+      const mx = r > g ? (r > b ? r : b) : (g > b ? g : b);
+      const mn = r < g ? (r < b ? r : b) : (g < b ? g : b);
+      const delta = mx - mn;
+
+      if (delta > sens && mx > 25){
+        /* حساب درجة اللون Hue */
+        let hue;
+        if (mx === r)      hue = 60 * (((g - b) / delta) % 6);
+        else if (mx === g) hue = 60 * ((b - r) / delta + 2);
+        else               hue = 60 * ((r - g) / delta + 4);
+        if (hue < 0) hue += 360;
+
+        if (hue >= hMin && hue <= hMax){
+          const satNorm = Math.min(1, delta / 100);
+          const k = kGold * satNorm;
+
+          /* 1) رفع التشبع */
+          const gray = 0.299*r + 0.587*g + 0.114*b;
+          const s = 1 + k * 1.5;
+          r = gray + (r - gray) * s;
+          g = gray + (g - gray) * s;
+          b = gray + (b - gray) * s;
+
+          /* 2) دفعة دافئة (ذهبية) */
+          r += 45 * k;
+          g += 26 * k;
+          b -= 12 * k;
+
+          /* 3) زيادة اللمعان */
+          const v = 1 + 0.55 * k;
+          r *= v; g *= v; b *= v;
+        }
+      }
+
+      d[i]   = r < 0 ? 0 : (r > 255 ? 255 : r);
+      d[i+1] = g < 0 ? 0 : (g > 255 ? 255 : g);
+      d[i+2] = b < 0 ? 0 : (b > 255 ? 255 : b);
+    }
+  }
+
+  /* ---------- ضبط أبعاد الكانفس ---------- */
+  function resizeCanvas(){
+    const vw = video.videoWidth  || 640;
+    const vh = video.videoHeight || 480;
+    const maxW = 640;                       // تصغير للمعالجة السريعة
+    const scale = Math.min(1, maxW / vw);
+    canvas.width  = Math.round(vw * scale);
+    canvas.height = Math.round(vh * scale);
+  }
+
+  /* ---------- الحلقة الرئيسية ---------- */
+  function loop(){
+    if (!running) return;
+
+    if (video.readyState >= 2 && video.videoWidth){
+      if (video.videoWidth !== lastVW || video.videoHeight !== lastVH){
+        lastVW = video.videoWidth;
+        lastVH = video.videoHeight;
+        resizeCanvas();
+      }
+
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      processPixels(frame.data);
+      ctx.putImageData(frame, 0, 0);
+    }
+
+    rafId = requestAnimationFrame(loop);
+  }
+
+  /* ---------- تشغيل الكاميرا ---------- */
+  async function start(){
+    if (running) return;
+    placeholder.innerHTML = '<div class="icon">⏳</div><div>جارٍ تشغيل الكاميرا…</div>';
+
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: 'environment' },
+          width:  { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      });
+
+      video.srcObject = stream;
+      await video.play();
+
+      resizeCanvas();
+      placeholder.style.display = 'none';
+      badge.style.display = 'block';
+      running = true;
+
+      btnStart.disabled = true;
+      btnStop.disabled  = false;
+      btnSnap.disabled  = false;
+
+      loop();
+    }catch(err){
+      console.error(err);
+      placeholder.innerHTML =
+        '<div class="icon">⚠️</div><div>تعذّر الوصول للكاميرا<br><small>' +
+        (err && err.name ? err.name : 'Error') +
+        '</small><br><small>تأكد من HTTPS أو localhost ومن إذن الكاميرا</small></div>';
+    }
+  }
+
+  /* ---------- إيقاف ---------- */
+  function stop(){
+    running = false;
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = null;
+
+    if (stream){
+      stream.getTracks().forEach(t => t.stop());
+      stream = null;
+    }
+    video.srcObject = null;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    placeholder.style.display = 'flex';
+    placeholder.innerHTML = '<div class="icon">🌙</div><div>الكاميرا متوقفة</div>';
+    badge.style.display = 'none';
+
+    btnStart.disabled = false;
+    btnStop.disabled  = true;
+    btnSnap.disabled  = true;
+
+    lastVW = lastVH = 0;
+  }
+
+  /* ---------- التقاط صورة ---------- */
+  function snapshot(){
+    if (!canvas.width) return;
+    const a = document.createElement('a');
+    a.download = 'gold-night-' + Date.now() + '.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  }
+
+  /* ---------- ربط الأحداث ---------- */
+  btnStart.addEventListener('click', start);
+  btnStop .addEventListener('click', stop);
+  btnSnap .addEventListener('click', snapshot);
+
+  function bindRange(id, key, fmt){
+    const el  = document.getElementById(id);
+    const out = document.getElementById(id + 'Val');
+    const update = () => {
+      P[key] = parseFloat(el.value);
+      out.textContent = fmt ? fmt(P[key]) : P[key];
+    };
+    el.addEventListener('input', update);
+    update();
+  }
+
+  bindRange('gamma', 'gamma', v => v.toFixed(2));
+  bindRange('gold',  'gold',  v => v.toFixed(2));
+  bindRange('hmin',  'hmin',  v => v + '°');
+  bindRange('hmax',  'hmax',  v => v + '°');
+  bindRange('sens',  'sens',  v => v);
+
+  document.getElementById('mode').addEventListener('change', e => {
+    P.mode = e.target.value;
+  });
+
+  window.addEventListener('pagehide', stop);
+})();
+</script>
+</body>
+</html>
