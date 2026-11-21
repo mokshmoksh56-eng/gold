@@ -57,6 +57,18 @@
   button.primary:hover{filter:brightness(1.1)}
   button:disabled{opacity:.45; cursor:not-allowed}
 
+  /* زرار الفلاش */
+  button#btnTorch {
+    background: #1c2533;
+    border-color: #3a4d68;
+    color: #a4c2f4;
+  }
+  button#btnTorch.active {
+    background: #ffd257;
+    color: #1a1200;
+    font-weight: bold;
+  }
+
   .controls{
     background:#101016; border:1px solid #22222b; border-radius:14px;
     padding:14px 16px; display:grid; gap:14px;
@@ -93,7 +105,7 @@
 <div class="app">
 
   <h1>✦ كاميرا ليلية تُظهر الذهب ذهبًا ✦</h1>
-  <p class="sub">تحسين الإضاءة المنخفضة + مضاعفة درجة اللون الذهبي في الوقت الحقيقي</p>
+  <p class="sub">تحسين الإضاءة المنخفضة + إضاءة الفلاش + مضاعفة درجة اللون الذهبي</p>
 
   <div class="stage">
     <video id="video" playsinline muted autoplay></video>
@@ -107,6 +119,7 @@
 
   <div class="toolbar">
     <button class="primary" id="btnStart">▶ تشغيل الكاميرا</button>
+    <button id="btnTorch" disabled>🔦 تشغيل فلاش الإضاءة</button>
     <button id="btnStop" disabled>■ إيقاف</button>
     <button id="btnSnap" disabled>📷 التقاط صورة</button>
   </div>
@@ -150,7 +163,7 @@
 
   <p class="hint">
     ملاحظة: الكاميرا تحتاج إلى <b>HTTPS</b> أو <b>localhost</b> لتعمل.<br>
-    لو الذهب ما زال باهتًا: ارفع «الإضاءة الليلية» إلى 0.5 و«قوة إبراز الذهب» إلى 1.5.
+    لو الفلاش مش بيشتغل، ده معناه إن المتصفح أو الموبايل بتاعك مش بيدعم التحكم في الفلاش عن طريق الويب.
   </p>
 </div>
 
@@ -164,8 +177,11 @@
   const btnStart   = document.getElementById('btnStart');
   const btnStop    = document.getElementById('btnStop');
   const btnSnap    = document.getElementById('btnSnap');
+  const btnTorch   = document.getElementById('btnTorch');
 
   let stream  = null;
+  let videoTrack = null;
+  let torchOn = false;
   let running = false;
   let rafId   = null;
   let lastVW  = 0, lastVH = 0;
@@ -195,7 +211,6 @@
   function processPixels(d){
     buildLUT(P.gamma);
 
-    /* وضع الرؤية الليلية الخضراء */
     if (P.mode === 'green'){
       for (let i = 0; i < d.length; i += 4){
         const r = lut[d[i]], g = lut[d[i+1]], b = lut[d[i+2]];
@@ -208,7 +223,6 @@
       return;
     }
 
-    /* وضع طبيعي محسّن (إضاءة فقط) */
     if (P.mode === 'natural'){
       for (let i = 0; i < d.length; i += 4){
         d[i]   = lut[d[i]];
@@ -231,7 +245,6 @@
       const delta = mx - mn;
 
       if (delta > sens && mx > 25){
-        /* حساب درجة اللون Hue */
         let hue;
         if (mx === r)      hue = 60 * (((g - b) / delta) % 6);
         else if (mx === g) hue = 60 * ((b - r) / delta + 2);
@@ -242,19 +255,16 @@
           const satNorm = Math.min(1, delta / 100);
           const k = kGold * satNorm;
 
-          /* 1) رفع التشبع */
           const gray = 0.299*r + 0.587*g + 0.114*b;
           const s = 1 + k * 1.5;
           r = gray + (r - gray) * s;
           g = gray + (g - gray) * s;
           b = gray + (b - gray) * s;
 
-          /* 2) دفعة دافئة (ذهبية) */
           r += 45 * k;
           g += 26 * k;
           b -= 12 * k;
 
-          /* 3) زيادة اللمعان */
           const v = 1 + 0.55 * k;
           r *= v; g *= v; b *= v;
         }
@@ -270,7 +280,7 @@
   function resizeCanvas(){
     const vw = video.videoWidth  || 640;
     const vh = video.videoHeight || 480;
-    const maxW = 640;                       // تصغير للمعالجة السريعة
+    const maxW = 640;                       
     const scale = Math.min(1, maxW / vw);
     canvas.width  = Math.round(vw * scale);
     canvas.height = Math.round(vh * scale);
@@ -311,6 +321,17 @@
         audio: false
       });
 
+      videoTrack = stream.getVideoTracks()[0];
+      
+      // التحقق من دعم الفلاش (الكشاف)
+      const capabilities = videoTrack.getCapabilities();
+      if (capabilities.torch) {
+        btnTorch.disabled = false;
+      } else {
+        btnTorch.disabled = true;
+        btnTorch.textContent = '🔦 الفلاش غير مدعوم';
+      }
+
       video.srcObject = stream;
       await video.play();
 
@@ -333,6 +354,23 @@
     }
   }
 
+  /* ---------- تشغيل وإطفاء الفلاش ---------- */
+  async function toggleTorch() {
+    if (!videoTrack || !videoTrack.getCapabilities().torch) return;
+    try {
+      torchOn = !torchOn;
+      await videoTrack.applyConstraints({
+        advanced: [{ torch: torchOn }]
+      });
+      btnTorch.classList.toggle('active', torchOn);
+      btnTorch.textContent = torchOn ? '🔦 إطفاء الفلاش' : '🔦 تشغيل فلاش الإضاءة';
+    } catch (err) {
+      console.error('فشل في تشغيل الفلاش:', err);
+      alert('المتصفح أو الجهاز لا يدعم تشغيل الفلاش أثناء الكاميرا.');
+      torchOn = false;
+    }
+  }
+
   /* ---------- إيقاف ---------- */
   function stop(){
     running = false;
@@ -342,6 +380,7 @@
     if (stream){
       stream.getTracks().forEach(t => t.stop());
       stream = null;
+      videoTrack = null;
     }
     video.srcObject = null;
 
@@ -353,6 +392,10 @@
     btnStart.disabled = false;
     btnStop.disabled  = true;
     btnSnap.disabled  = true;
+    btnTorch.disabled = true;
+    btnTorch.classList.remove('active');
+    btnTorch.textContent = '🔦 تشغيل فلاش الإضاءة';
+    torchOn = false;
 
     lastVW = lastVH = 0;
   }
@@ -370,6 +413,7 @@
   btnStart.addEventListener('click', start);
   btnStop .addEventListener('click', stop);
   btnSnap .addEventListener('click', snapshot);
+  btnTorch.addEventListener('click', toggleTorch);
 
   function bindRange(id, key, fmt){
     const el  = document.getElementById(id);
