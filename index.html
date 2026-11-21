@@ -3,11 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>كاميرا ليلية لإبراز الذهب</title>
+<title>كاميرا ليلية - انعكاس ضوء القمر على الذهب</title>
 <style>
   :root{
     --gold:#ffd257;
     --gold2:#f0a500;
+    --moon:#a4c2f4;
   }
   *{box-sizing:border-box}
   body{
@@ -92,8 +93,8 @@
 <body>
 <div class="app">
 
-  <h1>✦ كاميرا ليلية تُظهر الذهب ذهبًا ✦</h1>
-  <p class="sub">تحسين الإضاءة المنخفضة + مضاعفة درجة اللون الذهبي في الوقت الحقيقي</p>
+  <h1>🌙 انعكاس ضوء القمر على الذهب 🌙</h1>
+  <p class="sub">إضاءة باردة (قمر) + لمعة وتوهج دافئ للذهب</p>
 
   <div class="stage">
     <video id="video" playsinline muted autoplay></video>
@@ -113,44 +114,44 @@
 
   <div class="controls">
     <div class="row">
-      <label>الإضاءة الليلية</label>
-      <input type="range" id="gamma" min="0.35" max="1.4" step="0.01" value="0.65">
-      <span class="val" id="gammaVal">0.65</span>
+      <label>الوضع</label>
+      <select id="mode">
+        <option value="moon" selected>🌙 قمر وانعكاس الذهب</option>
+        <option value="gold">✨ ذهب فقط</option>
+        <option value="green">👁️ رؤية ليلية خضراء</option>
+        <option value="natural">☀️ طبيعي محسّن</option>
+      </select>
+      <span></span>
     </div>
+
+    <div class="row">
+      <label>قوة الانعكاس (التوهج)</label>
+      <input type="range" id="reflection" min="0" max="1.5" step="0.05" value="0.8">
+      <span class="val" id="reflectionVal">0.80</span>
+    </div>
+
+    <div class="row">
+      <label>الإضاءة الليلية</label>
+      <input type="range" id="gamma" min="0.35" max="1.4" step="0.01" value="0.7">
+      <span class="val" id="gammaVal">0.70</span>
+    </div>
+
     <div class="row">
       <label>قوة إبراز الذهب</label>
-      <input type="range" id="gold" min="0" max="2" step="0.05" value="1">
-      <span class="val" id="goldVal">1.00</span>
+      <input type="range" id="gold" min="0" max="2" step="0.05" value="1.2">
+      <span class="val" id="goldVal">1.20</span>
     </div>
-    <div class="row">
-      <label>بداية نطاق الذهب</label>
-      <input type="range" id="hmin" min="0" max="90" step="1" value="28">
-      <span class="val" id="hminVal">28°</span>
-    </div>
-    <div class="row">
-      <label>نهاية نطاق الذهب</label>
-      <input type="range" id="hmax" min="10" max="120" step="1" value="68">
-      <span class="val" id="hmaxVal">68°</span>
-    </div>
+
     <div class="row">
       <label>حساسية اللون</label>
       <input type="range" id="sens" min="10" max="150" step="1" value="45">
       <span class="val" id="sensVal">45</span>
     </div>
-    <div class="row">
-      <label>الوضع</label>
-      <select id="mode">
-        <option value="gold" selected>ذهب فقط (الموصى به)</option>
-        <option value="green">رؤية ليلية خضراء</option>
-        <option value="natural">طبيعي محسّن</option>
-      </select>
-      <span></span>
-    </div>
   </div>
 
   <p class="hint">
-    ملاحظة: الكاميرا تحتاج إلى <b>HTTPS</b> أو <b>localhost</b> لتعمل.<br>
-    لو الذهب ما زال باهتًا: ارفع «الإضاءة الليلية» إلى 0.5 و«قوة إبراز الذهب» إلى 1.5.
+    كل ما تزود <b>قوة الانعكاس</b>، الذهب هيبقى عليه لمعة وتوهج أقوى كأنه بيلمع تحت ضوء القمر.<br>
+    الكاميرا تحتاج إلى <b>HTTPS</b> أو <b>localhost</b> لتعمل.
   </p>
 </div>
 
@@ -170,17 +171,20 @@
   let rafId   = null;
   let lastVW  = 0, lastVH = 0;
 
-  /* ---------- إعدادات المعالجة ---------- */
+  // كانفس مخفي عشان نعمل تأثير التوهج (Glow)
+  const glowCanvas = document.createElement('canvas');
+  const glowCtx    = glowCanvas.getContext('2d');
+
   const P = {
-    gamma : 0.65,   // أقل = إضاءة ليلية أقوى
-    gold  : 1.00,   // قوة إبراز الذهب
-    hmin  : 28,     // بداية درجة اللون الذهبي
-    hmax  : 68,     // نهاية درجة اللون الذهبي
-    sens  : 45,     // أقل فرق بين القنوات المطلوب لاعتبار البكسل ملوّنًا
-    mode  : 'gold'
+    gamma : 0.7,
+    gold  : 1.2,
+    sens  : 45,
+    reflection: 0.8,
+    mode  : 'moon',
+    hmin  : 25,
+    hmax  : 70
   };
 
-  /* ---------- جدول تحويل جاما (LUT) لسرعة أعلى ---------- */
   let lut = new Uint8ClampedArray(256);
   let lutGamma = -1;
   function buildLUT(g){
@@ -191,11 +195,9 @@
     }
   }
 
-  /* ---------- معالجة البكسلات ---------- */
   function processPixels(d){
     buildLUT(P.gamma);
 
-    /* وضع الرؤية الليلية الخضراء */
     if (P.mode === 'green'){
       for (let i = 0; i < d.length; i += 4){
         const r = lut[d[i]], g = lut[d[i+1]], b = lut[d[i+2]];
@@ -208,7 +210,6 @@
       return;
     }
 
-    /* وضع طبيعي محسّن (إضاءة فقط) */
     if (P.mode === 'natural'){
       for (let i = 0; i < d.length; i += 4){
         d[i]   = lut[d[i]];
@@ -218,7 +219,8 @@
       return;
     }
 
-    /* ==== وضع الذهب ==== */
+    // ==== أوضاع الذهب (عادي أو قمر) ====
+    const isMoon = (P.mode === 'moon');
     const kGold = P.gold, hMin = P.hmin, hMax = P.hmax, sens = P.sens;
 
     for (let i = 0; i < d.length; i += 4){
@@ -226,12 +228,21 @@
       let g = lut[d[i+1]];
       let b = lut[d[i+2]];
 
-      const mx = r > g ? (r > b ? r : b) : (g > b ? g : b);
-      const mn = r < g ? (r < b ? r : b) : (g < b ? g : b);
+      const mx = Math.max(r, g, b);
+      const mn = Math.min(r, g, b);
       const delta = mx - mn;
 
+      // 1. إضافة لون ضوء القمر (أزرق بارد في الظلال)
+      if (isMoon) {
+        const lum = 0.299*r + 0.587*g + 0.114*b;
+        const moonTint = (255 - lum) / 255 * 25; 
+        r = Math.max(0, r - moonTint * 0.5);
+        g = Math.max(0, g + moonTint * 0.1);
+        b = Math.min(255, b + moonTint * 1.5);
+      }
+
+      // 2. إبراز الذهب
       if (delta > sens && mx > 25){
-        /* حساب درجة اللون Hue */
         let hue;
         if (mx === r)      hue = 60 * (((g - b) / delta) % 6);
         else if (mx === g) hue = 60 * ((b - r) / delta + 2);
@@ -242,21 +253,28 @@
           const satNorm = Math.min(1, delta / 100);
           const k = kGold * satNorm;
 
-          /* 1) رفع التشبع */
+          // رفع التشبع
           const gray = 0.299*r + 0.587*g + 0.114*b;
           const s = 1 + k * 1.5;
           r = gray + (r - gray) * s;
           g = gray + (g - gray) * s;
           b = gray + (b - gray) * s;
 
-          /* 2) دفعة دافئة (ذهبية) */
+          // دفعة دافئة
           r += 45 * k;
           g += 26 * k;
           b -= 12 * k;
 
-          /* 3) زيادة اللمعان */
-          const v = 1 + 0.55 * k;
-          r *= v; g *= v; b *= v;
+          // لمعة عالية جداً للذهب (عشان الانعكاس)
+          if (isMoon && mx > 120) {
+            const specular = (mx - 120) / 135 * 255 * P.reflection;
+            r += specular * 0.8;
+            g += specular * 0.7;
+            b += specular * 0.4;
+          } else {
+            const v = 1 + 0.55 * k;
+            r *= v; g *= v; b *= v;
+          }
         }
       }
 
@@ -266,17 +284,18 @@
     }
   }
 
-  /* ---------- ضبط أبعاد الكانفس ---------- */
   function resizeCanvas(){
     const vw = video.videoWidth  || 640;
     const vh = video.videoHeight || 480;
-    const maxW = 640;                       // تصغير للمعالجة السريعة
+    const maxW = 640;
     const scale = Math.min(1, maxW / vw);
     canvas.width  = Math.round(vw * scale);
     canvas.height = Math.round(vh * scale);
+    
+    glowCanvas.width = canvas.width;
+    glowCanvas.height = canvas.height;
   }
 
-  /* ---------- الحلقة الرئيسية ---------- */
   function loop(){
     if (!running) return;
 
@@ -287,27 +306,36 @@
         resizeCanvas();
       }
 
+      // 1. رسم الفيديو ومعالجة البكسلات
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
       processPixels(frame.data);
       ctx.putImageData(frame, 0, 0);
+
+      // 2. إضافة تأثير التوهج (الانعكاس) في وضع القمر
+      if (P.mode === 'moon' && P.reflection > 0) {
+        glowCtx.clearRect(0, 0, glowCanvas.width, glowCanvas.height);
+        glowCtx.drawImage(canvas, 0, 0);
+
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen'; // وضع الجمع الضوئي
+        ctx.globalAlpha = Math.min(1, P.reflection); 
+        ctx.filter = `blur(${Math.round(canvas.width * 0.015)}px) brightness(1.2)`; 
+        ctx.drawImage(glowCanvas, 0, 0);
+        ctx.restore();
+      }
     }
 
     rafId = requestAnimationFrame(loop);
   }
 
-  /* ---------- تشغيل الكاميرا ---------- */
   async function start(){
     if (running) return;
     placeholder.innerHTML = '<div class="icon">⏳</div><div>جارٍ تشغيل الكاميرا…</div>';
 
     try{
       stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: 'environment' },
-          width:  { ideal: 1280 },
-          height: { ideal: 720 }
-        },
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false
       });
 
@@ -326,23 +354,14 @@
       loop();
     }catch(err){
       console.error(err);
-      placeholder.innerHTML =
-        '<div class="icon">⚠️</div><div>تعذّر الوصول للكاميرا<br><small>' +
-        (err && err.name ? err.name : 'Error') +
-        '</small><br><small>تأكد من HTTPS أو localhost ومن إذن الكاميرا</small></div>';
+      placeholder.innerHTML = '<div class="icon">⚠️</div><div>تعذّر الوصول للكاميرا<br><small>' + (err.name || 'Error') + '</small></div>';
     }
   }
 
-  /* ---------- إيقاف ---------- */
   function stop(){
     running = false;
     if (rafId) cancelAnimationFrame(rafId);
-    rafId = null;
-
-    if (stream){
-      stream.getTracks().forEach(t => t.stop());
-      stream = null;
-    }
+    if (stream){ stream.getTracks().forEach(t => t.stop()); stream = null; }
     video.srcObject = null;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -353,20 +372,17 @@
     btnStart.disabled = false;
     btnStop.disabled  = true;
     btnSnap.disabled  = true;
-
     lastVW = lastVH = 0;
   }
 
-  /* ---------- التقاط صورة ---------- */
   function snapshot(){
     if (!canvas.width) return;
     const a = document.createElement('a');
-    a.download = 'gold-night-' + Date.now() + '.png';
+    a.download = 'moon-gold-' + Date.now() + '.png';
     a.href = canvas.toDataURL('image/png');
     a.click();
   }
 
-  /* ---------- ربط الأحداث ---------- */
   btnStart.addEventListener('click', start);
   btnStop .addEventListener('click', stop);
   btnSnap .addEventListener('click', snapshot);
@@ -382,16 +398,12 @@
     update();
   }
 
+  bindRange('reflection', 'reflection', v => v.toFixed(2));
   bindRange('gamma', 'gamma', v => v.toFixed(2));
   bindRange('gold',  'gold',  v => v.toFixed(2));
-  bindRange('hmin',  'hmin',  v => v + '°');
-  bindRange('hmax',  'hmax',  v => v + '°');
   bindRange('sens',  'sens',  v => v);
 
-  document.getElementById('mode').addEventListener('change', e => {
-    P.mode = e.target.value;
-  });
-
+  document.getElementById('mode').addEventListener('change', e => { P.mode = e.target.value; });
   window.addEventListener('pagehide', stop);
 })();
 </script>
