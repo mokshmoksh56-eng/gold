@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>قارن واشتري - مقارنة أسعار أمازون ونون وجوميا</title>
+    <meta name="description" content="قارن أسعار المنتجات بين أمازون مصر ونون وجوميا واعرف الأرخص قبل الشراء مع أحدث أكواد الخصم.">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -17,7 +18,7 @@
         .num-en { font-variant-numeric: lining-nums; direction: ltr; display: inline-block; }
     </style>
 </head>
-<body class="text-slate-800 pb-20">
+<body class="text-slate-800 flex flex-col min-h-screen">
 
     <!-- الهيدر -->
     <header class="sticky top-0 z-40 bg-slate-900 text-white shadow-lg">
@@ -31,13 +32,12 @@
                     <p class="text-xs text-teal-300 font-bold">مقارنة أسعار أمازون • نون • جوميا</p>
                 </div>
             </div>
-            <button onclick="openAdminModal()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition active:scale-95">
-                <span>⚙️</span>
-                <span>لوحة التحكم</span>
+            <button onclick="openInfoModal('contact')" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-2 rounded-xl text-xs font-bold transition">
+                📩 اتصل بنا
             </button>
         </div>
 
-        <!-- شريط البحث والترتيب -->
+        <!-- البحث والترتيب -->
         <div class="max-w-6xl mx-auto px-4 pb-3 flex gap-2">
             <div class="relative flex-1">
                 <input type="text" id="searchInput" oninput="renderProducts()" placeholder="ابحث عن منتج لمقارنة سعره..."
@@ -53,124 +53,51 @@
     </header>
 
     <!-- الأقسام -->
-    <section class="max-w-6xl mx-auto px-4 pt-4">
+    <section class="max-w-6xl mx-auto w-full px-4 pt-4">
         <div id="categoriesBar" class="flex gap-2 overflow-x-auto no-scrollbar pb-2"></div>
     </section>
 
     <!-- شبكة المنتجات -->
-    <main class="max-w-6xl mx-auto px-4 pt-3">
+    <main class="max-w-6xl mx-auto w-full px-4 pt-3 pb-12 flex-1">
         <div id="productsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
         <div id="emptyState" class="hidden text-center py-16">
             <p class="text-4xl mb-2">🔍</p>
-            <p class="font-bold text-slate-500">لا توجد منتجات مطابقة لبحثك</p>
+            <p class="font-bold text-slate-500">لا توجد منتجات مطابقة لبحثك حالياً</p>
         </div>
     </main>
 
-    <!-- نافذة لوحة التحكم -->
-    <div id="adminModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
-        <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl max-h-[92vh] flex flex-col overflow-hidden">
+    <!-- الفوتر الإلزامي للقبول في أمازون وعرب كليكس -->
+    <footer class="bg-slate-900 text-slate-300 border-t border-slate-800 mt-auto">
+        <div class="max-w-6xl mx-auto px-4 py-8 space-y-5">
+            <!-- إخلاء مسؤولية الأفلييت -->
+            <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 text-xs leading-relaxed text-slate-300">
+                <p class="font-black text-teal-400 mb-1">⚖️ إخلاء مسؤولية التسويق بالعمولة (Affiliate Disclosure):</p>
+                <p>
+                    يشارك موقع <span class="footerStoreName font-bold text-white">قارن واشتري</span> في برامج التسويق بالعمولة بما في ذلك برنامج شركاء أمازون (Amazon Associates) ونون وجوميا. عند شرائك من خلال الروابط الموجودة في الموقع، قد نحصل على عمولة بسيطة تساعدنا في استمرار الخدمة، وذلك <strong>دون أي تكلفة إضافية عليك إطلاقاً</strong>. الأسعار قابلة للتغيير من قِبل المتاجر في أي وقت.
+                </p>
+            </div>
+
+            <!-- روابط الصفحات القانونية -->
+            <div class="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-slate-800 text-xs font-bold">
+                <div class="flex flex-wrap gap-4">
+                    <button onclick="openInfoModal('about')" class="hover:text-teal-400 transition">من نحن</button>
+                    <button onclick="openInfoModal('privacy')" class="hover:text-teal-400 transition">سياسة الخصوصية</button>
+                    <button onclick="openInfoModal('terms')" class="hover:text-teal-400 transition">شروط الاستخدام</button>
+                    <button onclick="openInfoModal('contact')" class="hover:text-teal-400 transition">اتصل بنا</button>
+                </div>
+                <p class="text-slate-500">© <span class="num-en">2026</span> <span class="footerStoreName">قارن واشتري</span> — جميع الحقوق محفوظة</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- نافذة عرض الصفحات القانونية -->
+    <div id="infoModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
             <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
-                <h2 class="font-black text-lg">⚙️ إدارة المنتجات والمقارنات</h2>
-                <button onclick="closeAdminModal()" class="w-8 h-8 rounded-full bg-slate-800 font-bold">✕</button>
+                <h2 id="infoModalTitle" class="font-black text-base"></h2>
+                <button onclick="closeInfoModal()" class="w-8 h-8 rounded-full bg-slate-800 font-bold">✕</button>
             </div>
-
-            <!-- تبويبات لوحة التحكم -->
-            <div class="flex border-b bg-slate-50 text-xs sm:text-sm font-bold">
-                <button onclick="switchAdminTab('form')" id="tab-form" class="flex-1 py-3 border-b-2 border-teal-600 text-teal-700">➕ إضافة / تعديل</button>
-                <button onclick="switchAdminTab('list')" id="tab-list" class="flex-1 py-3 border-b-2 border-transparent text-slate-500">📦 المنتجات (<span id="prodCount" class="num-en">0</span>)</button>
-                <button onclick="switchAdminTab('settings')" id="tab-settings" class="flex-1 py-3 border-b-2 border-transparent text-slate-500">🔧 الإعدادات</button>
-            </div>
-
-            <div class="p-4 overflow-y-auto flex-1">
-                <!-- 1. فورم الإضافة والتعديل -->
-                <form id="productForm" onsubmit="saveProduct(event)" class="space-y-4">
-                    <input type="hidden" id="editProductId">
-
-                    <div id="editModeBanner" class="hidden bg-amber-50 border border-amber-300 text-amber-900 px-3 py-2 rounded-xl text-xs font-bold flex justify-between items-center">
-                        <span>✏️ أنت الآن في وضع تعديل منتج حالي</span>
-                        <button type="button" onclick="cancelEdit()" class="underline text-rose-600">إلغاء التعديل</button>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div class="sm:col-span-2">
-                            <label class="block text-xs font-bold text-slate-600 mb-1">اسم المنتج</label>
-                            <input type="text" id="pName" required placeholder="مثال: سماعة ساوندكور R50i" class="w-full border rounded-xl p-2.5 text-sm font-bold">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">القسم</label>
-                            <select id="pCategory" class="w-full border rounded-xl p-2.5 text-sm font-bold bg-white">
-                                <option value="إلكترونيات">إلكترونيات</option>
-                                <option value="موبايلات">موبايلات</option>
-                                <option value="أدوات منزلية">أدوات منزلية</option>
-                                <option value="إكسسوارات">إكسسوارات</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-slate-600 mb-1">رابط صورة المنتج (URL)</label>
-                        <input type="url" id="pImage" required dir="ltr" placeholder="https://..." class="w-full border rounded-xl p-2.5 text-sm font-bold text-left">
-                    </div>
-
-                    <div class="border-t pt-3 space-y-3">
-                        <p class="text-xs font-black text-slate-500">أدخل السعر ورابط العمولة للمتاجر المتوفر بها المنتج (اتركه فارغاً لو غير متوفر):</p>
-
-                        <!-- أمازون -->
-                        <div class="p-3 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-2">
-                            <div class="flex items-center justify-between">
-                                <span class="font-black text-sm text-slate-900">🟠 أمازون (Amazon)</span>
-                            </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                <input type="number" id="amazonPrice" min="1" dir="ltr" placeholder="السعر (ج.م)" class="border bg-white rounded-xl p-2 text-sm font-bold text-left">
-                                <input type="url" id="amazonLink" dir="ltr" placeholder="رابط المنتج في أمازون" class="sm:col-span-2 border bg-white rounded-xl p-2 text-sm font-bold text-left">
-                            </div>
-                        </div>
-
-                        <!-- نون -->
-                        <div class="p-3 rounded-2xl bg-yellow-50/90 border border-yellow-300 space-y-2">
-                            <div class="flex items-center justify-between">
-                                <span class="font-black text-sm text-slate-900">🟡 نون (Noon)</span>
-                            </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                <input type="number" id="noonPrice" min="1" dir="ltr" placeholder="السعر (ج.م)" class="border bg-white rounded-xl p-2 text-sm font-bold text-left">
-                                <input type="url" id="noonLink" dir="ltr" placeholder="رابط المنتج في نون" class="sm:col-span-2 border bg-white rounded-xl p-2 text-sm font-bold text-left">
-                            </div>
-                        </div>
-
-                        <!-- جوميا -->
-                        <div class="p-3 rounded-2xl bg-orange-50/80 border border-orange-200 space-y-2">
-                            <div class="flex items-center justify-between">
-                                <span class="font-black text-sm text-slate-900">🔶 جوميا (Jumia)</span>
-                            </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                <input type="number" id="jumiaPrice" min="1" dir="ltr" placeholder="السعر (ج.م)" class="border bg-white rounded-xl p-2 text-sm font-bold text-left">
-                                <input type="url" id="jumiaLink" dir="ltr" placeholder="رابط المنتج في جوميا" class="sm:col-span-2 border bg-white rounded-xl p-2 text-sm font-bold text-left">
-                            </div>
-                        </div>
-                    </div>
-
-                    <button type="submit" id="saveProdBtn" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-black py-3 rounded-xl shadow transition active:scale-95">
-                        حفظ ونشر المقارنة
-                    </button>
-                </form>
-
-                <!-- 2. قائمة المنتجات -->
-                <div id="adminProductsList" class="hidden space-y-2.5"></div>
-
-                <!-- 3. الإعدادات -->
-                <form id="settingsForm" onsubmit="saveSettings(event)" class="hidden space-y-3">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-600 mb-1">اسم الموقع / التطبيق</label>
-                        <input type="text" id="setStoreName" required class="w-full border rounded-xl p-2.5 text-sm font-bold">
-                    </div>
-                    <button type="submit" class="w-full bg-slate-900 text-white font-black py-3 rounded-xl">
-                        حفظ الإعدادات
-                    </button>
-                    <button type="button" onclick="resetDemoData()" class="w-full bg-rose-50 text-rose-600 border border-rose-200 font-bold py-2.5 rounded-xl text-xs">
-                        إعادة ضبط المنتجات التجريبية
-                    </button>
-                </form>
-            </div>
+            <div id="infoModalBody" class="p-5 overflow-y-auto text-sm leading-relaxed text-slate-700 space-y-3 font-semibold"></div>
         </div>
     </div>
 
@@ -185,29 +112,28 @@
                 const gain = ctx.createGain();
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(620, ctx.currentTime);
-                gain.gain.setValueAtTime(0.05, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
+                gain.gain.setValueAtTime(0.04, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
                 osc.connect(gain);
                 gain.connect(ctx.destination);
                 osc.start();
-                osc.stop(ctx.currentTime + 0.06);
+                osc.stop(ctx.currentTime + 0.05);
             } catch (e) {}
         }
 
-        // بيانات المتاجر وألوانها
         const STORES = {
-            amazon: { name: 'أمازون', badgeBg: 'bg-slate-900 text-amber-400', dot: 'bg-amber-500' },
-            noon:   { name: 'نون',    badgeBg: 'bg-yellow-300 text-slate-950', dot: 'bg-yellow-400' },
-            jumia:  { name: 'جوميا',  badgeBg: 'bg-orange-500 text-white',     dot: 'bg-orange-500' }
+            amazon: { name: 'أمازون', badgeBg: 'bg-slate-900 text-amber-400' },
+            noon:   { name: 'نون',    badgeBg: 'bg-yellow-300 text-slate-950' },
+            jumia:  { name: 'جوميا',  badgeBg: 'bg-orange-500 text-white' }
         };
 
-        // منتجات تجريبية للمقارنة (تقدر تعدل روابطها من لوحة التحكم)
         const DEFAULT_PRODUCTS = [
             {
                 id: 101,
                 name: "سماعة أذن لاسلكية Anker Soundcore R50i - أسود",
                 category: "إلكترونيات",
                 image: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=500&q=80",
+                coupon: "SAVE10",
                 offers: {
                     amazon: { price: 980, link: "https://www.amazon.eg/s?k=soundcore+r50i" },
                     noon:   { price: 895, link: "https://www.noon.com/egypt-ar/search/?q=soundcore+r50i" },
@@ -219,6 +145,7 @@
                 name: "ساعة ذكية مقاومة للماء مع شاشة AMOLED ومكالمات",
                 category: "إكسسوارات",
                 image: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=500&q=80",
+                coupon: "",
                 offers: {
                     amazon: { price: 1450, link: "https://www.amazon.eg/s?k=smart+watch+amoled" },
                     noon:   { price: 1620, link: "https://www.noon.com/egypt-ar/search/?q=smart+watch+amoled" },
@@ -230,6 +157,7 @@
                 name: "قلاية هوائية ديجيتال 5.5 لتر بدون زيت - 1700 وات",
                 category: "أدوات منزلية",
                 image: "https://images.unsplash.com/photo-1585515320310-259814833e62?w=500&q=80",
+                coupon: "OFF50",
                 offers: {
                     amazon: { price: 3499, link: "https://www.amazon.eg/s?k=air+fryer" },
                     noon:   { price: 3650, link: "https://www.noon.com/egypt-ar/search/?q=air+fryer" },
@@ -238,16 +166,15 @@
             }
         ];
 
-        const DEFAULT_SETTINGS = { storeName: "قارن واشتري" };
+        const DEFAULT_SETTINGS = {
+            storeName: "قارن واشتري",
+            email: "contact@yourdomain.com",
+            whatsapp: "201000000000"
+        };
 
         let products = JSON.parse(localStorage.getItem('cmp_products')) || DEFAULT_PRODUCTS;
         let settings = JSON.parse(localStorage.getItem('cmp_settings')) || DEFAULT_SETTINGS;
         let activeCategory = "الكل";
-
-        function saveAll() {
-            localStorage.setItem('cmp_products', JSON.stringify(products));
-            localStorage.setItem('cmp_settings', JSON.stringify(settings));
-        }
 
         function showToast(msg) {
             const t = document.getElementById('toast');
@@ -256,7 +183,13 @@
             setTimeout(() => t.classList.add('hidden'), 2500);
         }
 
-        // استخراج وترتيب عروض المنتج من الأرخص للأغلى
+        function copyCoupon(code) {
+            playClickSound();
+            navigator.clipboard.writeText(code).then(() => {
+                showToast(`تم نسخ كود الخصم: ${code} ✅`);
+            });
+        }
+
         function getSortedOffers(product) {
             const list = [];
             ['amazon', 'noon', 'jumia'].forEach(key => {
@@ -271,11 +204,9 @@
                     });
                 }
             });
-            // الترتيب التصاعدي (من الأرخص للأغلى)
             return list.sort((a, b) => a.price - b.price);
         }
 
-        // عرض الأقسام
         function renderCategories() {
             const cats = ["الكل", "إلكترونيات", "موبايلات", "أدوات منزلية", "إكسسوارات"];
             document.getElementById('categoriesBar').innerHTML = cats.map(c => `
@@ -297,7 +228,6 @@
             renderProducts();
         }
 
-        // عرض المنتجات مع المقارنة
         function renderProducts() {
             const q = document.getElementById('searchInput').value.trim().toLowerCase();
             const sortBy = document.getElementById('sortSelect').value;
@@ -318,11 +248,8 @@
                     return matchCat && matchSearch && p.sortedOffers.length > 0;
                 });
 
-            if (sortBy === 'cheapest') {
-                list.sort((a, b) => a.minPrice - b.minPrice);
-            } else if (sortBy === 'savings') {
-                list.sort((a, b) => b.savings - a.savings);
-            }
+            if (sortBy === 'cheapest') list.sort((a, b) => a.minPrice - b.minPrice);
+            else if (sortBy === 'savings') list.sort((a, b) => b.savings - a.savings);
 
             if (list.length === 0) {
                 grid.innerHTML = '';
@@ -337,7 +264,7 @@
                     const diff = offer.price - p.minPrice;
 
                     return `
-                        <a href="${offer.link}" target="_blank" onclick="playClickSound()"
+                        <a href="${offer.link}" target="_blank" rel="nofollow sponsored noopener" onclick="playClickSound()"
                            class="flex items-center justify-between p-2.5 rounded-xl border transition active:scale-[0.99] ${
                                isCheapest
                                ? 'bg-emerald-50 border-emerald-400 shadow-sm hover:bg-emerald-100/70'
@@ -364,7 +291,6 @@
 
                 return `
                 <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden flex flex-col hover:shadow-md transition">
-                    <!-- صورة المنتج -->
                     <div class="relative h-48 bg-slate-100 overflow-hidden">
                         <img src="${p.image}" alt="${p.name}" onerror="this.src='https://via.placeholder.com/400x300?text=No+Image'"
                             class="w-full h-full object-cover">
@@ -378,7 +304,6 @@
                         ` : ''}
                     </div>
 
-                    <!-- التفاصيل والمقارنة -->
                     <div class="p-4 flex flex-col flex-1 justify-between gap-3">
                         <div>
                             <h3 class="font-black text-slate-800 text-sm leading-relaxed line-clamp-2">${p.name}</h3>
@@ -391,7 +316,15 @@
                             </div>
                         </div>
 
-                        <!-- قائمة الأسعار مرتبة من الأرخص للأغلى -->
+                        ${p.coupon ? `
+                            <div class="flex items-center justify-between bg-purple-50 border border-dashed border-purple-300 rounded-xl px-3 py-2">
+                                <span class="text-xs font-bold text-purple-900">🎟️ كود خصم: <strong class="num-en text-purple-700">${p.coupon}</strong></span>
+                                <button onclick="copyCoupon('${p.coupon}')" class="bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-black px-2.5 py-1 rounded-lg transition active:scale-95">
+                                    نسخ الكود
+                                </button>
+                            </div>
+                        ` : ''}
+
                         <div class="space-y-2 pt-2 border-t border-slate-100">
                             <p class="text-[11px] font-bold text-slate-400">ترتيب المتاجر (من الأرخص إلى الأغلى):</p>
                             ${offersHtml}
@@ -402,155 +335,59 @@
             }).join('');
         }
 
-        // لوحة التحكم
-        function openAdminModal() {
+        // الصفحات القانونية المطلوبة للقبول
+        function openInfoModal(type) {
             playClickSound();
-            document.getElementById('adminModal').classList.remove('hidden');
-            document.getElementById('setStoreName').value = settings.storeName;
-            renderAdminList();
-        }
+            const titleEl = document.getElementById('infoModalTitle');
+            const bodyEl = document.getElementById('infoModalBody');
+            const name = settings.storeName;
 
-        function closeAdminModal() {
-            document.getElementById('adminModal').classList.add('hidden');
-            cancelEdit();
-        }
-
-        function switchAdminTab(tab) {
-            playClickSound();
-            const tabs = ['form', 'list', 'settings'];
-            const panels = { form: 'productForm', list: 'adminProductsList', settings: 'settingsForm' };
-
-            tabs.forEach(t => {
-                document.getElementById(`tab-${t}`).className =
-                    `flex-1 py-3 border-b-2 ${t === tab ? 'border-teal-600 text-teal-700' : 'border-transparent text-slate-500'}`;
-                document.getElementById(panels[t]).classList.toggle('hidden', t !== tab);
-            });
-            if (tab === 'list') renderAdminList();
-        }
-
-        function saveProduct(e) {
-            e.preventDefault();
-            playClickSound();
-
-            const offers = {
-                amazon: { price: Number(document.getElementById('amazonPrice').value) || 0, link: document.getElementById('amazonLink').value.trim() },
-                noon:   { price: Number(document.getElementById('noonPrice').value) || 0,   link: document.getElementById('noonLink').value.trim() },
-                jumia:  { price: Number(document.getElementById('jumiaPrice').value) || 0,  link: document.getElementById('jumiaLink').value.trim() }
-            };
-
-            const hasValidOffer = Object.values(offers).some(o => o.price > 0 && o.link);
-            if (!hasValidOffer) {
-                showToast("برجاء إدخال السعر والرابط لمتجر واحد على الأقل");
-                return;
-            }
-
-            const editId = document.getElementById('editProductId').value;
-            const productData = {
-                id: editId ? Number(editId) : Date.now(),
-                name: document.getElementById('pName').value.trim(),
-                category: document.getElementById('pCategory').value,
-                image: document.getElementById('pImage').value.trim(),
-                offers
-            };
-
-            if (editId) {
-                const idx = products.findIndex(p => p.id === Number(editId));
-                if (idx !== -1) products[idx] = productData;
-                showToast("تم تحديث المنتج والأسعار بنجاح ✅");
-            } else {
-                products.unshift(productData);
-                showToast("تمت إضافة المنتج والمقارنة بنجاح ✅");
-            }
-
-            saveAll();
-            renderProducts();
-            renderAdminList();
-            cancelEdit();
-        }
-
-        function editProduct(id) {
-            playClickSound();
-            const p = products.find(item => item.id === id);
-            if (!p) return;
-
-            document.getElementById('editProductId').value = p.id;
-            document.getElementById('pName').value = p.name;
-            document.getElementById('pCategory').value = p.category;
-            document.getElementById('pImage').value = p.image;
-
-            document.getElementById('amazonPrice').value = p.offers?.amazon?.price || '';
-            document.getElementById('amazonLink').value = p.offers?.amazon?.link || '';
-            document.getElementById('noonPrice').value = p.offers?.noon?.price || '';
-            document.getElementById('noonLink').value = p.offers?.noon?.link || '';
-            document.getElementById('jumiaPrice').value = p.offers?.jumia?.price || '';
-            document.getElementById('jumiaLink').value = p.offers?.jumia?.link || '';
-
-            document.getElementById('editModeBanner').classList.remove('hidden');
-            document.getElementById('saveProdBtn').textContent = "حفظ التعديلات";
-            switchAdminTab('form');
-        }
-
-        function cancelEdit() {
-            document.getElementById('productForm').reset();
-            document.getElementById('editProductId').value = '';
-            document.getElementById('editModeBanner').classList.add('hidden');
-            document.getElementById('saveProdBtn').textContent = "حفظ ونشر المقارنة";
-        }
-
-        function deleteProduct(id) {
-            playClickSound();
-            products = products.filter(p => p.id !== id);
-            saveAll();
-            renderProducts();
-            renderAdminList();
-            showToast("تم حذف المنتج");
-        }
-
-        function renderAdminList() {
-            document.getElementById('prodCount').textContent = products.length;
-            const listEl = document.getElementById('adminProductsList');
-            listEl.innerHTML = products.map(p => {
-                const sorted = getSortedOffers(p);
-                const summary = sorted.map(s => `${s.storeName}: ${s.price}`).join(' | ');
-                return `
-                <div class="flex items-center justify-between gap-3 p-3 border rounded-2xl bg-slate-50">
-                    <div class="flex items-center gap-3 overflow-hidden">
-                        <img src="${p.image}" class="w-12 h-12 rounded-xl object-cover shrink-0">
-                        <div class="truncate">
-                            <p class="font-black text-sm truncate">${p.name}</p>
-                            <p class="text-xs text-slate-500 font-bold truncate">${summary}</p>
-                        </div>
-                    </div>
-                    <div class="flex gap-1.5 shrink-0">
-                        <button onclick="editProduct(${p.id})" class="bg-amber-100 text-amber-800 px-2.5 py-1.5 rounded-lg text-xs font-bold">تعديل</button>
-                        <button onclick="deleteProduct(${p.id})" class="bg-rose-100 text-rose-700 px-2.5 py-1.5 rounded-lg text-xs font-bold">حذف</button>
-                    </div>
-                </div>
+            if (type === 'about') {
+                titleEl.textContent = `من نحن — ${name}`;
+                bodyEl.innerHTML = `
+                    <p>موقع <strong>${name}</strong> هو منصة مستقلة لمقارنة أسعار المنتجات في أكبر المتاجر الإلكترونية في مصر (أمازون مصر، نون، وجوميا).</p>
+                    <p>هدفنا هو مساعدة المتسوقين على إيجاد أفضل سعر متاح لنفس المنتج في ثوانٍ، وتوفير الوقت والمال قبل اتخاذ قرار الشراء.</p>
                 `;
-            }).join('') || '<p class="text-center text-slate-400 py-8 font-bold">لا توجد منتجات</p>';
+            } else if (type === 'privacy') {
+                titleEl.textContent = "سياسة الخصوصية (Privacy Policy)";
+                bodyEl.innerHTML = `
+                    <p>نحن في <strong>${name}</strong> نحترم خصوصية زوارنا بشكل كامل:</p>
+                    <ul class="list-disc pr-5 space-y-1.5">
+                        <li>لا نجمع أي بيانات شخصية حساسة أو بيانات بطاقات بنكية؛ جميع عمليات الشراء تتم مباشرة على المواقع الرسمية (أمازون، نون، جوميا).</li>
+                        <li>عند النقر على رابط منتج، يتم تحويلك للمتجر المعني وقد يستخدم المتجر ملفات تعريف الارتباط (Cookies) لتتبع عملية الشراء وحساب عمولة التسويق.</li>
+                        <li>لأي استفسار حول الخصوصية يمكنك التواصل معنا عبر صفحة "اتصل بنا".</li>
+                    </ul>
+                `;
+            } else if (type === 'terms') {
+                titleEl.textContent = "شروط الاستخدام";
+                bodyEl.innerHTML = `
+                    <p>الأسعار المعروضة في <strong>${name}</strong> يتم تحديثها بشكل دوري، ولكن السعر النهائي المعتمد هو السعر الظاهر داخل صفحة المتجر وقت إتمام الطلب.</p>
+                    <p>الموقع غير مسؤول عن سياسات الشحن أو الضمان أو الاسترجاع، حيث تخضع كل عملية شراء لشروط المتجر الذي تم الشراء منه.</p>
+                `;
+            } else if (type === 'contact') {
+                titleEl.textContent = "اتصل بنا";
+                bodyEl.innerHTML = `
+                    <p>يسعدنا تواصلك معنا لأي استفسار أو اقتراح منتج للمقارنة:</p>
+                    <div class="bg-slate-50 p-3 rounded-xl border space-y-2">
+                        <p>📧 البريد الإلكتروني: <a href="mailto:${settings.email}" class="text-teal-700 underline num-en">${settings.email}</a></p>
+                        <p>📱 واتساب: <a href="https://wa.me/${settings.whatsapp}" target="_blank" class="text-emerald-700 underline num-en">+${settings.whatsapp}</a></p>
+                    </div>
+                `;
+            }
+
+            document.getElementById('infoModal').classList.remove('hidden');
         }
 
-        function saveSettings(e) {
-            e.preventDefault();
-            playClickSound();
-            settings.storeName = document.getElementById('setStoreName').value.trim();
-            saveAll();
-            applySettings();
-            showToast("تم حفظ الإعدادات ✅");
-        }
-
-        function resetDemoData() {
-            localStorage.removeItem('cmp_products');
-            localStorage.removeItem('cmp_settings');
-            location.reload();
+        function closeInfoModal() {
+            document.getElementById('infoModal').classList.add('hidden');
         }
 
         function applySettings() {
             document.getElementById('headerStoreName').textContent = settings.storeName;
             document.title = `${settings.storeName} - مقارنة أسعار أمازون ونون وجوميا`;
+            document.querySelectorAll('.footerStoreName').forEach(el => el.textContent = settings.storeName);
         }
 
-        // التشغيل الأولي
         applySettings();
         renderCategories();
         renderProducts();
