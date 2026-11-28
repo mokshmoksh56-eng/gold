@@ -1,443 +1,619 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>كاميرا ليلية لإبراز الذهب</title>
-<style>
-  :root{
-    --gold:#ffd257;
-    --gold2:#f0a500;
-  }
-  *{box-sizing:border-box}
-  body{
-    margin:0; padding:16px;
-    font-family:system-ui,"Segoe UI",Tahoma,sans-serif;
-    background:radial-gradient(circle at 50% 0%, #1a1a22, #07070a 70%);
-    color:#eee; min-height:100vh;
-    display:flex; justify-content:center;
-  }
-  .app{width:100%; max-width:900px}
-  h1{font-size:20px; text-align:center; color:var(--gold); margin:6px 0 4px}
-  .sub{text-align:center; color:#8b8b96; font-size:13px; margin:0 0 16px}
-
-  .stage{
-    position:relative; background:#000; border-radius:16px; overflow:hidden;
-    border:1px solid #2a2a33; box-shadow:0 0 45px rgba(240,165,0,.15);
-    display:flex; justify-content:center; align-items:center;
-    min-height:240px;
-  }
-  canvas{display:block; width:100%; height:auto; max-height:70vh}
-  video{display:none}
-
-  .placeholder{
-    position:absolute; inset:0; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; gap:12px;
-    color:#7a7a86; font-size:14px; text-align:center; padding:24px;
-  }
-  .placeholder .icon{font-size:38px; opacity:.6}
-
-  .badge{
-    position:absolute; top:10px; inset-inline-start:10px; display:none;
-    background:rgba(0,0,0,.6); border:1px solid #3a3a45; color:var(--gold);
-    font-size:12px; padding:4px 12px; border-radius:999px; backdrop-filter:blur(6px);
-  }
-
-  .toolbar{display:flex; gap:10px; flex-wrap:wrap; margin:14px 0}
-  button{
-    flex:1 1 140px; padding:12px 14px; border-radius:12px; cursor:pointer;
-    border:1px solid #33333d; background:#17171e; color:#ddd;
-    font-size:14px; font-family:inherit; transition:.15s;
-  }
-  button:hover{background:#20202a; border-color:#4a4a58}
-  button.primary{
-    background:linear-gradient(135deg,var(--gold2),#ffcf4d);
-    color:#1a1200; font-weight:700; border:none;
-  }
-  button.primary:hover{filter:brightness(1.1)}
-  button:disabled{opacity:.45; cursor:not-allowed}
-
-  /* زرار الفلاش */
-  button#btnTorch {
-    background: #1c2533;
-    border-color: #3a4d68;
-    color: #a4c2f4;
-  }
-  button#btnTorch.active {
-    background: #ffd257;
-    color: #1a1200;
-    font-weight: bold;
-  }
-
-  .controls{
-    background:#101016; border:1px solid #22222b; border-radius:14px;
-    padding:14px 16px; display:grid; gap:14px;
-  }
-  .row{display:grid; grid-template-columns:150px 1fr 58px; align-items:center; gap:12px}
-  .row label{font-size:13px; color:#a9a9b6}
-  .row .val{font-size:12px; color:var(--gold); text-align:center;
-    font-variant-numeric:tabular-nums}
-  input[type=range]{
-    -webkit-appearance:none; appearance:none; height:6px; border-radius:6px;
-    background:#2b2b36; outline:none; width:100%;
-  }
-  input[type=range]::-webkit-slider-thumb{
-    -webkit-appearance:none; width:18px; height:18px; border-radius:50%;
-    background:var(--gold); cursor:pointer; border:2px solid #1a1a20;
-    box-shadow:0 0 10px rgba(255,210,87,.6);
-  }
-  input[type=range]::-moz-range-thumb{
-    width:18px; height:18px; border-radius:50%; background:var(--gold);
-    cursor:pointer; border:2px solid #1a1a20;
-  }
-  select{
-    background:#1a1a22; color:#eee; border:1px solid #33333d; border-radius:10px;
-    padding:9px 12px; font-family:inherit; font-size:13px; cursor:pointer;
-  }
-  .hint{font-size:12px; color:#6f6f7c; text-align:center; margin-top:12px; line-height:1.7}
-  @media(max-width:520px){
-    .row{grid-template-columns:1fr 58px; }
-    .row label{grid-column:1 / -1}
-  }
-</style>
-</head>
-<body>
-<div class="app">
-
-  <h1>✦ كاميرا ليلية تُظهر الذهب ذهبًا ✦</h1>
-  <p class="sub">تحسين الإضاءة المنخفضة + إضاءة الفلاش + مضاعفة درجة اللون الذهبي</p>
-
-  <div class="stage">
-    <video id="video" playsinline muted autoplay></video>
-    <canvas id="canvas"></canvas>
-    <div class="badge" id="badge">● LIVE</div>
-    <div class="placeholder" id="placeholder">
-      <div class="icon">🌙</div>
-      <div>اضغط «تشغيل الكاميرا» للبدء<br>ثم وجّه الكاميرا نحو الذهب</div>
-    </div>
-  </div>
-
-  <div class="toolbar">
-    <button class="primary" id="btnStart">▶ تشغيل الكاميرا</button>
-    <button id="btnTorch" disabled>🔦 تشغيل فلاش الإضاءة</button>
-    <button id="btnStop" disabled>■ إيقاف</button>
-    <button id="btnSnap" disabled>📷 التقاط صورة</button>
-  </div>
-
-  <div class="controls">
-    <div class="row">
-      <label>الإضاءة الليلية</label>
-      <input type="range" id="gamma" min="0.35" max="1.4" step="0.01" value="0.65">
-      <span class="val" id="gammaVal">0.65</span>
-    </div>
-    <div class="row">
-      <label>قوة إبراز الذهب</label>
-      <input type="range" id="gold" min="0" max="2" step="0.05" value="1">
-      <span class="val" id="goldVal">1.00</span>
-    </div>
-    <div class="row">
-      <label>بداية نطاق الذهب</label>
-      <input type="range" id="hmin" min="0" max="90" step="1" value="28">
-      <span class="val" id="hminVal">28°</span>
-    </div>
-    <div class="row">
-      <label>نهاية نطاق الذهب</label>
-      <input type="range" id="hmax" min="10" max="120" step="1" value="68">
-      <span class="val" id="hmaxVal">68°</span>
-    </div>
-    <div class="row">
-      <label>حساسية اللون</label>
-      <input type="range" id="sens" min="10" max="150" step="1" value="45">
-      <span class="val" id="sensVal">45</span>
-    </div>
-    <div class="row">
-      <label>الوضع</label>
-      <select id="mode">
-        <option value="gold" selected>ذهب فقط (الموصى به)</option>
-        <option value="green">رؤية ليلية خضراء</option>
-        <option value="natural">طبيعي محسّن</option>
-      </select>
-      <span></span>
-    </div>
-  </div>
-
-  <p class="hint">
-    ملاحظة: الكاميرا تحتاج إلى <b>HTTPS</b> أو <b>localhost</b> لتعمل.<br>
-    لو الفلاش مش بيشتغل، ده معناه إن المتصفح أو الموبايل بتاعك مش بيدعم التحكم في الفلاش عن طريق الويب.
-  </p>
-</div>
-
-<script>
-(function(){
-  const video      = document.getElementById('video');
-  const canvas     = document.getElementById('canvas');
-  const ctx        = canvas.getContext('2d', { willReadFrequently: true });
-  const placeholder= document.getElementById('placeholder');
-  const badge      = document.getElementById('badge');
-  const btnStart   = document.getElementById('btnStart');
-  const btnStop    = document.getElementById('btnStop');
-  const btnSnap    = document.getElementById('btnSnap');
-  const btnTorch   = document.getElementById('btnTorch');
-
-  let stream  = null;
-  let videoTrack = null;
-  let torchOn = false;
-  let running = false;
-  let rafId   = null;
-  let lastVW  = 0, lastVH = 0;
-
-  /* ---------- إعدادات المعالجة ---------- */
-  const P = {
-    gamma : 0.65,   // أقل = إضاءة ليلية أقوى
-    gold  : 1.00,   // قوة إبراز الذهب
-    hmin  : 28,     // بداية درجة اللون الذهبي
-    hmax  : 68,     // نهاية درجة اللون الذهبي
-    sens  : 45,     // أقل فرق بين القنوات المطلوب لاعتبار البكسل ملوّنًا
-    mode  : 'gold'
-  };
-
-  /* ---------- جدول تحويل جاما (LUT) لسرعة أعلى ---------- */
-  let lut = new Uint8ClampedArray(256);
-  let lutGamma = -1;
-  function buildLUT(g){
-    if (lutGamma === g) return;
-    lutGamma = g;
-    for (let i = 0; i < 256; i++){
-      lut[i] = Math.max(0, Math.min(255, Math.round(255 * Math.pow(i / 255, g))));
-    }
-  }
-
-  /* ---------- معالجة البكسلات ---------- */
-  function processPixels(d){
-    buildLUT(P.gamma);
-
-    if (P.mode === 'green'){
-      for (let i = 0; i < d.length; i += 4){
-        const r = lut[d[i]], g = lut[d[i+1]], b = lut[d[i+2]];
-        let y = 0.299*r + 0.587*g + 0.114*b;
-        y *= 1.2;
-        d[i]   = y * 0.25;
-        d[i+1] = y;
-        d[i+2] = y * 0.38;
-      }
-      return;
-    }
-
-    if (P.mode === 'natural'){
-      for (let i = 0; i < d.length; i += 4){
-        d[i]   = lut[d[i]];
-        d[i+1] = lut[d[i+1]];
-        d[i+2] = lut[d[i+2]];
-      }
-      return;
-    }
-
-    /* ==== وضع الذهب ==== */
-    const kGold = P.gold, hMin = P.hmin, hMax = P.hmax, sens = P.sens;
-
-    for (let i = 0; i < d.length; i += 4){
-      let r = lut[d[i]];
-      let g = lut[d[i+1]];
-      let b = lut[d[i+2]];
-
-      const mx = r > g ? (r > b ? r : b) : (g > b ? g : b);
-      const mn = r < g ? (r < b ? r : b) : (g < b ? g : b);
-      const delta = mx - mn;
-
-      if (delta > sens && mx > 25){
-        let hue;
-        if (mx === r)      hue = 60 * (((g - b) / delta) % 6);
-        else if (mx === g) hue = 60 * ((b - r) / delta + 2);
-        else               hue = 60 * ((r - g) / delta + 4);
-        if (hue < 0) hue += 360;
-
-        if (hue >= hMin && hue <= hMax){
-          const satNorm = Math.min(1, delta / 100);
-          const k = kGold * satNorm;
-
-          const gray = 0.299*r + 0.587*g + 0.114*b;
-          const s = 1 + k * 1.5;
-          r = gray + (r - gray) * s;
-          g = gray + (g - gray) * s;
-          b = gray + (b - gray) * s;
-
-          r += 45 * k;
-          g += 26 * k;
-          b -= 12 * k;
-
-          const v = 1 + 0.55 * k;
-          r *= v; g *= v; b *= v;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>متجر العروض - Affiliate Store</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f8fafc;
+            -webkit-tap-highlight-color: transparent;
         }
-      }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .num-en { font-variant-numeric: lining-nums; direction: ltr; display: inline-block; }
+    </style>
+</head>
+<body class="text-slate-800 pb-20">
 
-      d[i]   = r < 0 ? 0 : (r > 255 ? 255 : r);
-      d[i+1] = g < 0 ? 0 : (g > 255 ? 255 : g);
-      d[i+2] = b < 0 ? 0 : (b > 255 ? 255 : b);
-    }
-  }
+    <!-- الهيدر -->
+    <header class="sticky top-0 z-40 bg-slate-900 text-white shadow-lg">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+                <div class="w-10 h-10 rounded-xl bg-teal-500 flex items-center justify-center font-black text-xl shadow">
+                    🛍️
+                </div>
+                <div>
+                    <h1 id="headerStoreName" class="font-black text-lg leading-tight">متجر العروض الذكية</h1>
+                    <p class="text-xs text-teal-300 font-bold">أفضل المنتجات بأقل الأسعار</p>
+                </div>
+            </div>
+            <button onclick="openAdminModal()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition active:scale-95">
+                <span>⚙️</span>
+                <span>لوحة التحكم</span>
+                <span id="ordersBadge" class="hidden bg-rose-500 text-white text-[10px] px-1.5 py-0.5 rounded-full num-en">0</span>
+            </button>
+        </div>
 
-  /* ---------- ضبط أبعاد الكانفس ---------- */
-  function resizeCanvas(){
-    const vw = video.videoWidth  || 640;
-    const vh = video.videoHeight || 480;
-    const maxW = 640;                       
-    const scale = Math.min(1, maxW / vw);
-    canvas.width  = Math.round(vw * scale);
-    canvas.height = Math.round(vh * scale);
-  }
+        <!-- شريط البحث -->
+        <div class="max-w-6xl mx-auto px-4 pb-3">
+            <div class="relative">
+                <input type="text" id="searchInput" oninput="renderProducts()" placeholder="ابحث عن منتج..."
+                    class="w-full bg-slate-800 text-white placeholder-slate-400 rounded-xl py-2.5 pr-10 pl-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-teal-500">
+                <span class="absolute right-3 top-2.5 text-slate-400">🔍</span>
+            </div>
+        </div>
+    </header>
 
-  /* ---------- الحلقة الرئيسية ---------- */
-  function loop(){
-    if (!running) return;
+    <!-- الأقسام -->
+    <section class="max-w-6xl mx-auto px-4 pt-4">
+        <div id="categoriesBar" class="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+            <!-- يتم توليد الأزرار بالجافاسكربت -->
+        </div>
+    </section>
 
-    if (video.readyState >= 2 && video.videoWidth){
-      if (video.videoWidth !== lastVW || video.videoHeight !== lastVH){
-        lastVW = video.videoWidth;
-        lastVH = video.videoHeight;
-        resizeCanvas();
-      }
+    <!-- شبكة المنتجات -->
+    <main class="max-w-6xl mx-auto px-4 pt-3">
+        <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <!-- يتم عرض المنتجات هنا -->
+        </div>
+        <div id="emptyState" class="hidden text-center py-16">
+            <p class="text-4xl mb-2">📦</p>
+            <p class="font-bold text-slate-500">لا توجد منتجات مطابقة لبحثك</p>
+        </div>
+    </main>
 
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      processPixels(frame.data);
-      ctx.putImageData(frame, 0, 0);
-    }
+    <!-- نافذة الطلب المباشر (الدفع عند الاستلام - تاجر / أفلييت محلي) -->
+    <div id="orderModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h2 class="font-black text-lg text-slate-900">تأكيد الطلب (الدفع عند الاستلام)</h2>
+                <button onclick="closeOrderModal()" class="w-8 h-8 rounded-full bg-slate-100 font-bold text-slate-600">✕</button>
+            </div>
 
-    rafId = requestAnimationFrame(loop);
-  }
+            <div id="orderProductSummary" class="flex gap-3 bg-slate-50 p-3 rounded-2xl mb-4 border border-slate-100">
+                <!-- ملخص المنتج -->
+            </div>
 
-  /* ---------- تشغيل الكاميرا ---------- */
-  async function start(){
-    if (running) return;
-    placeholder.innerHTML = '<div class="icon">⏳</div><div>جارٍ تشغيل الكاميرا…</div>';
+            <form id="codOrderForm" onsubmit="submitCodOrder(event)" class="space-y-3">
+                <input type="hidden" id="orderProductId">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">الاسم بالكامل</label>
+                    <input type="text" id="custName" required placeholder="مثال: أحمد محمد" class="w-full border border-slate-300 rounded-xl p-2.5 text-sm font-bold focus:ring-2 focus:ring-teal-500 outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">رقم الموبايل (إنجليزي)</label>
+                        <input type="tel" id="custPhone" required pattern="[0-9+]+" placeholder="01012345678" dir="ltr" class="w-full border border-slate-300 rounded-xl p-2.5 text-sm font-bold text-left focus:ring-2 focus:ring-teal-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">الكمية</label>
+                        <input type="number" id="custQty" min="1" value="1" oninput="updateOrderTotal()" dir="ltr" class="w-full border border-slate-300 rounded-xl p-2.5 text-sm font-bold text-center focus:ring-2 focus:ring-teal-500 outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">المحافظة والعنوان بالتفصيل</label>
+                    <textarea id="custAddress" required rows="2" placeholder="المحافظة - المدينة - الشارع - علامة مميزة" class="w-full border border-slate-300 rounded-xl p-2.5 text-sm font-bold focus:ring-2 focus:ring-teal-500 outline-none"></textarea>
+                </div>
 
-    try{
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: 'environment' },
-          width:  { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: false
-      });
+                <div class="bg-teal-50 border border-teal-200 rounded-xl p-3 flex justify-between items-center">
+                    <span class="font-bold text-sm text-teal-900">الإجمالي المطلوب:</span>
+                    <span id="orderTotalDisplay" class="font-black text-lg text-teal-700 num-en">0 EGP</span>
+                </div>
 
-      videoTrack = stream.getVideoTracks()[0];
-      
-      // التحقق من دعم الفلاش (الكشاف)
-      const capabilities = videoTrack.getCapabilities();
-      if (capabilities.torch) {
-        btnTorch.disabled = false;
-      } else {
-        btnTorch.disabled = true;
-        btnTorch.textContent = '🔦 الفلاش غير مدعوم';
-      }
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 transition active:scale-95">
+                    <span>تأكيد وإرسال عبر واتساب</span>
+                    <span>📲</span>
+                </button>
+            </form>
+        </div>
+    </div>
 
-      video.srcObject = stream;
-      await video.play();
+    <!-- نافذة لوحة التحكم -->
+    <div id="adminModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+        <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
+                <h2 class="font-black text-lg">⚙️ لوحة تحكم المتجر</h2>
+                <button onclick="closeAdminModal()" class="w-8 h-8 rounded-full bg-slate-800 font-bold">✕</button>
+            </div>
 
-      resizeCanvas();
-      placeholder.style.display = 'none';
-      badge.style.display = 'block';
-      running = true;
+            <!-- تبويبات لوحة التحكم -->
+            <div class="flex border-b bg-slate-50 text-xs sm:text-sm font-bold">
+                <button onclick="switchAdminTab('add')" id="tab-add" class="flex-1 py-3 border-b-2 border-teal-600 text-teal-700">➕ إضافة منتج</button>
+                <button onclick="switchAdminTab('list')" id="tab-list" class="flex-1 py-3 border-b-2 border-transparent text-slate-500">📦 المنتجات</button>
+                <button onclick="switchAdminTab('orders')" id="tab-orders" class="flex-1 py-3 border-b-2 border-transparent text-slate-500">🧾 الطلبات</button>
+                <button onclick="switchAdminTab('settings')" id="tab-settings" class="flex-1 py-3 border-b-2 border-transparent text-slate-500">🔧 الإعدادات</button>
+            </div>
 
-      btnStart.disabled = true;
-      btnStop.disabled  = false;
-      btnSnap.disabled  = false;
+            <div class="p-4 overflow-y-auto flex-1">
+                <!-- 1. إضافة منتج -->
+                <form id="addProductForm" onsubmit="addProduct(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">اسم المنتج</label>
+                        <input type="text" id="pName" required placeholder="مثال: سماعة بلوتوث أصلية" class="w-full border rounded-xl p-2.5 text-sm font-bold">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">السعر الحالي (جنيه)</label>
+                            <input type="number" id="pPrice" required min="1" dir="ltr" placeholder="450" class="w-full border rounded-xl p-2.5 text-sm font-bold text-left">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">السعر قبل الخصم (اختياري)</label>
+                            <input type="number" id="pOldPrice" dir="ltr" placeholder="600" class="w-full border rounded-xl p-2.5 text-sm font-bold text-left">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">القسم</label>
+                            <select id="pCategory" class="w-full border rounded-xl p-2.5 text-sm font-bold bg-white">
+                                <option value="إلكترونيات">إلكترونيات</option>
+                                <option value="أدوات منزلية">أدوات منزلية</option>
+                                <option value="إكسسوارات">إكسسوارات</option>
+                                <option value="عروض خاصة">عروض خاصة</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">نوع الأفلييت</label>
+                            <select id="pType" onchange="toggleLinkField()" class="w-full border rounded-xl p-2.5 text-sm font-bold bg-white">
+                                <option value="link">رابط عمولة (أمازون / نون)</option>
+                                <option value="cod">طلب مباشر (تاجر / دفع عند الاستلام)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="affiliateLinkBox">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">رابط العمولة الخاص بك (Affiliate URL)</label>
+                        <input type="url" id="pLink" dir="ltr" placeholder="https://www.amazon.eg/dp/..." class="w-full border rounded-xl p-2.5 text-sm font-bold text-left">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">رابط صورة المنتج (URL)</label>
+                        <input type="url" id="pImage" required dir="ltr" placeholder="https://..." class="w-full border rounded-xl p-2.5 text-sm font-bold text-left">
+                    </div>
+                    <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-black py-3 rounded-xl shadow">
+                        حفظ ونشر المنتج
+                    </button>
+                </form>
 
-      loop();
-    }catch(err){
-      console.error(err);
-      placeholder.innerHTML =
-        '<div class="icon">⚠️</div><div>تعذّر الوصول للكاميرا<br><small>' +
-        (err && err.name ? err.name : 'Error') +
-        '</small><br><small>تأكد من HTTPS أو localhost ومن إذن الكاميرا</small></div>';
-    }
-  }
+                <!-- 2. إدارة المنتجات -->
+                <div id="adminProductsList" class="hidden space-y-2"></div>
 
-  /* ---------- تشغيل وإطفاء الفلاش ---------- */
-  async function toggleTorch() {
-    if (!videoTrack || !videoTrack.getCapabilities().torch) return;
-    try {
-      torchOn = !torchOn;
-      await videoTrack.applyConstraints({
-        advanced: [{ torch: torchOn }]
-      });
-      btnTorch.classList.toggle('active', torchOn);
-      btnTorch.textContent = torchOn ? '🔦 إطفاء الفلاش' : '🔦 تشغيل فلاش الإضاءة';
-    } catch (err) {
-      console.error('فشل في تشغيل الفلاش:', err);
-      alert('المتصفح أو الجهاز لا يدعم تشغيل الفلاش أثناء الكاميرا.');
-      torchOn = false;
-    }
-  }
+                <!-- 3. الطلبات المسجلة -->
+                <div id="adminOrdersList" class="hidden space-y-3"></div>
 
-  /* ---------- إيقاف ---------- */
-  function stop(){
-    running = false;
-    if (rafId) cancelAnimationFrame(rafId);
-    rafId = null;
+                <!-- 4. الإعدادات -->
+                <form id="settingsForm" onsubmit="saveSettings(event)" class="hidden space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">اسم المتجر</label>
+                        <input type="text" id="setStoreName" required class="w-full border rounded-xl p-2.5 text-sm font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">رقم واتساب استقبال الطلبات (بكود الدولة بدون +)</label>
+                        <input type="tel" id="setWhatsapp" required dir="ltr" placeholder="201000000000" class="w-full border rounded-xl p-2.5 text-sm font-bold text-left">
+                    </div>
+                    <button type="submit" class="w-full bg-slate-900 text-white font-black py-3 rounded-xl">
+                        حفظ الإعدادات
+                    </button>
+                    <button type="button" onclick="resetDemoData()" class="w-full bg-rose-50 text-rose-600 border border-rose-200 font-bold py-2.5 rounded-xl text-xs mt-2">
+                        إعادة ضبط البيانات الافتراضية للتجربة
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
 
-    if (stream){
-      stream.getTracks().forEach(t => t.stop());
-      stream = null;
-      videoTrack = null;
-    }
-    video.srcObject = null;
+    <!-- إشعار سريع (Toast) -->
+    <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 hidden bg-slate-900 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-xl"></div>
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    placeholder.style.display = 'flex';
-    placeholder.innerHTML = '<div class="icon">🌙</div><div>الكاميرا متوقفة</div>';
-    badge.style.display = 'none';
+    <script>
+        // صوت نقرة خفيف للتفاعل
+        function playClickSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, ctx.currentTime);
+                gain.gain.setValueAtTime(0.05, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.06);
+            } catch (e) {}
+        }
 
-    btnStart.disabled = false;
-    btnStop.disabled  = true;
-    btnSnap.disabled  = true;
-    btnTorch.disabled = true;
-    btnTorch.classList.remove('active');
-    btnTorch.textContent = '🔦 تشغيل فلاش الإضاءة';
-    torchOn = false;
+        // بيانات افتراضية للتجربة
+        const DEFAULT_PRODUCTS = [
+            {
+                id: 1,
+                name: "سماعة أذن لاسلكية عازلة للضوضاء مع شاشة شحن",
+                price: 599,
+                oldPrice: 850,
+                category: "إلكترونيات",
+                type: "link",
+                link: "https://www.amazon.eg",
+                image: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=500&q=80"
+            },
+            {
+                id: 2,
+                name: "خلاط محمول قابل للشحن USB لتحضير العصائر",
+                price: 380,
+                oldPrice: 520,
+                category: "أدوات منزلية",
+                type: "cod",
+                link: "",
+                image: "https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=500&q=80"
+            },
+            {
+                id: 3,
+                name: "ساعة ذكية رياضية مقاومة للماء - شاشة AMOLED",
+                price: 1250,
+                oldPrice: 1600,
+                category: "إكسسوارات",
+                type: "link",
+                link: "https://www.amazon.eg",
+                image: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=500&q=80"
+            },
+            {
+                id: 4,
+                name: "منظم مطبخ ذكي دوار للتوابل والأدوات",
+                price: 275,
+                oldPrice: 350,
+                category: "أدوات منزلية",
+                type: "cod",
+                link: "",
+                image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=500&q=80"
+            }
+        ];
 
-    lastVW = lastVH = 0;
-  }
+        const DEFAULT_SETTINGS = {
+            storeName: "متجر العروض الذكية",
+            whatsapp: "201000000000"
+        };
 
-  /* ---------- التقاط صورة ---------- */
-  function snapshot(){
-    if (!canvas.width) return;
-    const a = document.createElement('a');
-    a.download = 'gold-night-' + Date.now() + '.png';
-    a.href = canvas.toDataURL('image/png');
-    a.click();
-  }
+        // تحميل البيانات من localStorage
+        let products = JSON.parse(localStorage.getItem('aff_products')) || DEFAULT_PRODUCTS;
+        let orders = JSON.parse(localStorage.getItem('aff_orders')) || [];
+        let settings = JSON.parse(localStorage.getItem('aff_settings')) || DEFAULT_SETTINGS;
+        let activeCategory = "الكل";
 
-  /* ---------- ربط الأحداث ---------- */
-  btnStart.addEventListener('click', start);
-  btnStop .addEventListener('click', stop);
-  btnSnap .addEventListener('click', snapshot);
-  btnTorch.addEventListener('click', toggleTorch);
+        function saveAll() {
+            localStorage.setItem('aff_products', JSON.stringify(products));
+            localStorage.setItem('aff_orders', JSON.stringify(orders));
+            localStorage.setItem('aff_settings', JSON.stringify(settings));
+        }
 
-  function bindRange(id, key, fmt){
-    const el  = document.getElementById(id);
-    const out = document.getElementById(id + 'Val');
-    const update = () => {
-      P[key] = parseFloat(el.value);
-      out.textContent = fmt ? fmt(P[key]) : P[key];
-    };
-    el.addEventListener('input', update);
-    update();
-  }
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.remove('hidden');
+            setTimeout(() => t.classList.add('hidden'), 2500);
+        }
 
-  bindRange('gamma', 'gamma', v => v.toFixed(2));
-  bindRange('gold',  'gold',  v => v.toFixed(2));
-  bindRange('hmin',  'hmin',  v => v + '°');
-  bindRange('hmax',  'hmax',  v => v + '°');
-  bindRange('sens',  'sens',  v => v);
+        // عرض الأقسام
+        function renderCategories() {
+            const cats = ["الكل", "إلكترونيات", "أدوات منزلية", "إكسسوارات", "عروض خاصة"];
+            const bar = document.getElementById('categoriesBar');
+            bar.innerHTML = cats.map(c => `
+                <button onclick="selectCategory('${c}')"
+                    class="px-4 py-1.5 rounded-full text-xs font-black whitespace-nowrap transition ${
+                        activeCategory === c
+                        ? 'bg-teal-600 text-white shadow'
+                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                    }">
+                    ${c}
+                </button>
+            `).join('');
+        }
 
-  document.getElementById('mode').addEventListener('change', e => {
-    P.mode = e.target.value;
-  });
+        function selectCategory(cat) {
+            playClickSound();
+            activeCategory = cat;
+            renderCategories();
+            renderProducts();
+        }
 
-  window.addEventListener('pagehide', stop);
-})();
-</script>
+        // عرض المنتجات
+        function renderProducts() {
+            const q = document.getElementById('searchInput').value.trim().toLowerCase();
+            const grid = document.getElementById('productsGrid');
+            const empty = document.getElementById('emptyState');
+
+            const filtered = products.filter(p => {
+                const matchCat = activeCategory === "الكل" || p.category === activeCategory;
+                const matchSearch = p.name.toLowerCase().includes(q);
+                return matchCat && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            empty.classList.add('hidden');
+            grid.innerHTML = filtered.map(p => {
+                const discount = p.oldPrice && p.oldPrice > p.price
+                    ? Math.round(((p.oldPrice - p.price) / p.oldPrice) * 100)
+                    : 0;
+
+                const isLink = p.type === 'link';
+                const badgeText = isLink ? 'عرض أمازون / متجر خارجي' : 'دفع عند الاستلام 🚚';
+                const badgeColor = isLink ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800';
+
+                return `
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col hover:shadow-md transition">
+                    <div class="relative h-48 bg-slate-100 overflow-hidden">
+                        <img src="${p.image}" alt="${p.name}" onerror="this.src='https://via.placeholder.com/400x300?text=No+Image'"
+                            class="w-full h-full object-cover">
+                        ${discount > 0 ? `<span class="absolute top-2 right-2 bg-rose-600 text-white text-xs font-black px-2 py-0.5 rounded-lg num-en">-${discount}%</span>` : ''}
+                        <span class="absolute bottom-2 right-2 ${badgeColor} text-[11px] font-bold px-2.5 py-0.5 rounded-lg shadow-sm">${badgeText}</span>
+                    </div>
+                    <div class="p-4 flex flex-col flex-1 justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold text-slate-400">${p.category}</span>
+                            <h3 class="font-black text-slate-800 text-sm mt-0.5 line-clamp-2 leading-relaxed">${p.name}</h3>
+                        </div>
+                        <div class="mt-4">
+                            <div class="flex items-baseline gap-2 mb-3">
+                                <span class="font-black text-xl text-teal-700 num-en">${p.price.toLocaleString('en-US')}</span>
+                                <span class="text-xs font-bold text-teal-700">ج.م</span>
+                                ${p.oldPrice ? `<span class="text-xs font-bold text-slate-400 line-through num-en">${p.oldPrice.toLocaleString('en-US')} ج.م</span>` : ''}
+                            </div>
+                            ${isLink ? `
+                                <a href="${p.link}" target="_blank" onclick="playClickSound()"
+                                    class="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 transition active:scale-95">
+                                    <span>اشتري الآن من العرض</span>
+                                    <span>↗️</span>
+                                </a>
+                            ` : `
+                                <button onclick="openOrderModal(${p.id})"
+                                    class="w-full bg-teal-600 hover:bg-teal-700 text-white font-black py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 transition active:scale-95">
+                                    <span>اطلب الآن (عند الاستلام)</span>
+                                    <span>🛒</span>
+                                </button>
+                            `}
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // نافذة الطلب المباشر (COD)
+        let currentOrderProduct = null;
+
+        function openOrderModal(productId) {
+            playClickSound();
+            currentOrderProduct = products.find(p => p.id === productId);
+            if (!currentOrderProduct) return;
+
+            document.getElementById('orderProductId').value = productId;
+            document.getElementById('custQty').value = 1;
+            document.getElementById('orderProductSummary').innerHTML = `
+                <img src="${currentOrderProduct.image}" class="w-16 h-16 rounded-xl object-cover">
+                <div class="flex-1">
+                    <h4 class="font-black text-sm text-slate-800 line-clamp-1">${currentOrderProduct.name}</h4>
+                    <p class="text-teal-700 font-black text-sm mt-1 num-en">${currentOrderProduct.price.toLocaleString('en-US')} EGP</p>
+                </div>
+            `;
+            updateOrderTotal();
+            document.getElementById('orderModal').classList.remove('hidden');
+        }
+
+        function closeOrderModal() {
+            document.getElementById('orderModal').classList.add('hidden');
+        }
+
+        function updateOrderTotal() {
+            if (!currentOrderProduct) return;
+            const qty = Math.max(1, parseInt(document.getElementById('custQty').value) || 1);
+            const total = currentOrderProduct.price * qty;
+            document.getElementById('orderTotalDisplay').textContent = `${total.toLocaleString('en-US')} EGP`;
+        }
+
+        function submitCodOrder(e) {
+            e.preventDefault();
+            playClickSound();
+
+            const name = document.getElementById('custName').value.trim();
+            const phone = document.getElementById('custPhone').value.trim();
+            const qty = Math.max(1, parseInt(document.getElementById('custQty').value) || 1);
+            const address = document.getElementById('custAddress').value.trim();
+            const total = currentOrderProduct.price * qty;
+            const dateStr = new Date().toLocaleDateString('en-GB'); // DD/MM/YYYY
+
+            const newOrder = {
+                id: Date.now(),
+                productName: currentOrderProduct.name,
+                price: currentOrderProduct.price,
+                qty,
+                total,
+                name,
+                phone,
+                address,
+                date: dateStr
+            };
+
+            orders.unshift(newOrder);
+            saveAll();
+            updateOrdersBadge();
+            closeOrderModal();
+            document.getElementById('codOrderForm').reset();
+            showToast("تم تسجيل طلبك بنجاح! جاري فتح واتساب...");
+
+            const msg = `طلب جديد من ${settings.storeName}%0A` +
+                        `━━━━━━━━━━━━%0A` +
+                        `📦 المنتج: ${newOrder.productName}%0A` +
+                        `🔢 الكمية: ${qty}%0A` +
+                        `💰 الإجمالي: ${total} ج.م%0A` +
+                        `━━━━━━━━━━━━%0A` +
+                        `👤 الاسم: ${name}%0A` +
+                        `📱 الموبايل: ${phone}%0A` +
+                        `📍 العنوان: ${address}%0A` +
+                        `📅 التاريخ: ${dateStr}`;
+
+            window.open(`https://wa.me/${settings.whatsapp}?text=${msg}`, '_blank');
+        }
+
+        // لوحة التحكم
+        function openAdminModal() {
+            playClickSound();
+            document.getElementById('adminModal').classList.remove('hidden');
+            document.getElementById('setStoreName').value = settings.storeName;
+            document.getElementById('setWhatsapp').value = settings.whatsapp;
+            renderAdminLists();
+        }
+
+        function closeAdminModal() {
+            document.getElementById('adminModal').classList.add('hidden');
+        }
+
+        function switchAdminTab(tab) {
+            playClickSound();
+            const tabs = ['add', 'list', 'orders', 'settings'];
+            const panels = {
+                add: 'addProductForm',
+                list: 'adminProductsList',
+                orders: 'adminOrdersList',
+                settings: 'settingsForm'
+            };
+
+            tabs.forEach(t => {
+                document.getElementById(`tab-${t}`).className =
+                    `flex-1 py-3 border-b-2 ${t === tab ? 'border-teal-600 text-teal-700' : 'border-transparent text-slate-500'}`;
+                document.getElementById(panels[t]).classList.toggle('hidden', t !== tab);
+            });
+
+            if (tab === 'list' || tab === 'orders') renderAdminLists();
+        }
+
+        function toggleLinkField() {
+            const type = document.getElementById('pType').value;
+            const box = document.getElementById('affiliateLinkBox');
+            box.classList.toggle('hidden', type !== 'link');
+        }
+
+        function addProduct(e) {
+            e.preventDefault();
+            playClickSound();
+            const type = document.getElementById('pType').value;
+            const link = document.getElementById('pLink').value.trim();
+
+            if (type === 'link' && !link) {
+                showToast("برجاء إدخال رابط العمولة");
+                return;
+            }
+
+            const newProd = {
+                id: Date.now(),
+                name: document.getElementById('pName').value.trim(),
+                price: Number(document.getElementById('pPrice').value),
+                oldPrice: Number(document.getElementById('pOldPrice').value) || 0,
+                category: document.getElementById('pCategory').value,
+                type,
+                link,
+                image: document.getElementById('pImage').value.trim()
+            };
+
+            products.unshift(newProd);
+            saveAll();
+            renderProducts();
+            document.getElementById('addProductForm').reset();
+            toggleLinkField();
+            showToast("تمت إضافة المنتج للمتجر ✅");
+        }
+
+        function deleteProduct(id) {
+            playClickSound();
+            products = products.filter(p => p.id !== id);
+            saveAll();
+            renderProducts();
+            renderAdminLists();
+            showToast("تم حذف المنتج");
+        }
+
+        function deleteOrder(id) {
+            playClickSound();
+            orders = orders.filter(o => o.id !== id);
+            saveAll();
+            updateOrdersBadge();
+            renderAdminLists();
+        }
+
+        function renderAdminLists() {
+            // قائمة المنتجات
+            const listEl = document.getElementById('adminProductsList');
+            listEl.innerHTML = products.map(p => `
+                <div class="flex items-center justify-between gap-3 p-2.5 border rounded-xl bg-slate-50">
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <img src="${p.image}" class="w-12 h-12 rounded-lg object-cover shrink-0">
+                        <div class="truncate">
+                            <p class="font-bold text-sm truncate">${p.name}</p>
+                            <p class="text-xs text-slate-500 font-bold num-en">${p.price} EGP • ${p.type === 'link' ? 'رابط عمولة' : 'دفع عند الاستلام'}</p>
+                        </div>
+                    </div>
+                    <button onclick="deleteProduct(${p.id})" class="bg-rose-100 text-rose-700 px-3 py-1.5 rounded-lg text-xs font-bold shrink-0">حذف</button>
+                </div>
+            `).join('') || '<p class="text-center text-slate-400 py-8 font-bold">لا توجد منتجات</p>';
+
+            // قائمة الطلبات
+            const ordersEl = document.getElementById('adminOrdersList');
+            ordersEl.innerHTML = orders.map(o => `
+                <div class="p-3 border rounded-2xl bg-slate-50 space-y-1">
+                    <div class="flex justify-between items-start">
+                        <span class="font-black text-sm text-teal-800">${o.productName} (x${o.qty})</span>
+                        <button onclick="deleteOrder(${o.id})" class="text-rose-600 text-xs font-bold">حذف</button>
+                    </div>
+                    <p class="text-xs font-bold text-slate-700">👤 ${o.name} — 📱 <span class="num-en">${o.phone}</span></p>
+                    <p class="text-xs font-bold text-slate-500">📍 ${o.address}</p>
+                    <div class="flex justify-between items-center pt-1 text-xs font-black">
+                        <span class="text-emerald-700 num-en">الإجمالي: ${o.total} EGP</span>
+                        <span class="text-slate-400 num-en">${o.date}</span>
+                    </div>
+                </div>
+            `).join('') || '<p class="text-center text-slate-400 py-8 font-bold">لا توجد طلبات مسجلة حتى الآن</p>';
+        }
+
+        function saveSettings(e) {
+            e.preventDefault();
+            playClickSound();
+            settings.storeName = document.getElementById('setStoreName').value.trim();
+            settings.whatsapp = document.getElementById('setWhatsapp').value.trim();
+            saveAll();
+            applySettings();
+            showToast("تم حفظ الإعدادات ✅");
+        }
+
+        function resetDemoData() {
+            localStorage.removeItem('aff_products');
+            localStorage.removeItem('aff_orders');
+            localStorage.removeItem('aff_settings');
+            location.reload();
+        }
+
+        function applySettings() {
+            document.getElementById('headerStoreName').textContent = settings.storeName;
+            document.title = settings.storeName;
+        }
+
+        function updateOrdersBadge() {
+            const badge = document.getElementById('ordersBadge');
+            if (orders.length > 0) {
+                badge.textContent = orders.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        // التشغيل الأولي
+        applySettings();
+        updateOrdersBadge();
+        renderCategories();
+        renderProducts();
+    </script>
 </body>
 </html>
